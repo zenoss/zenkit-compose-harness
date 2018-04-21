@@ -1,0 +1,19 @@
+zk:
+  image: zookeeper
+kafka:
+  image: confluentinc/cp-kafka:3.2.1-6
+  environment:
+    - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    - KAFKA_BROKER_ID=1
+    - KAFKA_ZOOKEEPER_CONNECT=zk:2181/databus/kafka
+  links:
+    - zk
+kafka-schema-registry:
+  image: confluentinc/cp-schema-registry:3.2.1-6
+  environment:
+    - SCHEMA_REGISTRY_HOST_NAME=kafka-schema-registry
+    - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zk:2181/databus/kafka
+    - SCHEMA_REGISTRY_SCHEMA_REGISTRY_ZK_NAMESPACE=databus/registry
+  links:
+    - zk
+    - kafka

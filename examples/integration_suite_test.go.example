@@ -1,0 +1,52 @@
+package examples
+
+import (
+	"errors"
+	"time"
+
+	"github.com/Shopify/sarama"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/zenoss/zenkit/test"
+
+	"testing"
+)
+
+var (
+	logger  = TestLogger()
+	harness Harness
+)
+
+func TestDatabus(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Databus Suite")
+}
+
+var _ = BeforeSuite(func() {
+	var err error
+	harness, err = NewDockerComposeHarness("integration-test", "docker-compose.yml")
+	Ω(err).ShouldNot(HaveOccurred())
+
+	Ω(harness.Start()).ShouldNot(HaveOccurred())
+
+	kafka, err := harness.Resolve("kafka", 9092)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	err = harness.Wait(func() error {
+		broker := sarama.NewBroker(kafka)
+		if err := broker.Open(sarama.NewConfig()); err != nil {
+			return err
+		}
+		if connected, _ := broker.Connected(); !connected {
+			return errors.New("not connected")
+		}
+		return nil
+	}, 30*time.Second)
+	Ω(err).ShouldNot(HaveOccurred())
+	logger.WithField("address", kafka).Infof("Kafka is ready")
+
+})
+
+var _ = AfterSuite(func() {
+	harness.Stop()
+})
