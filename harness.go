@@ -1,4 +1,4 @@
-package test
+package zenkit_harness
 
 import (
 	"context"
